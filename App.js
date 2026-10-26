@@ -1,20 +1,34 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import Login from './components/Login'; 
+import Register from './components/Register'; 
+
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>App turismo</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+  const [logado, setLogado] = useState(false);
+  const [telaAtual, setTelaAtual] = useState('login'); 
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+  if (logado) {
+    return (
+      alert('Login realizado com')
+    );
+  }
+
+  if (telaAtual === 'login') {
+    return (
+      <Login 
+        aoLogar={() => setLogado(true)} 
+        irParaCadastro={() => setTelaAtual('cadastro')} // Função simples para mudar de tela
+      />
+    );
+  } else {
+    return (
+      <Register
+        aoCadastrar={() => {
+          alert('Cadastro realizado!');
+          setTelaAtual('login'); 
+        }} 
+        irParaLogin={() => setTelaAtual('login')} 
+      />
+    );
+  }
+}
