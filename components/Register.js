@@ -28,8 +28,10 @@ export default function Register({ aoCadastrar, irParaLogin }) {
       {/* Topo Azul Estilizado */}
       <View style={authStyles.topoAzul}>
         <View style={authStyles.conatinerLogo}>
-          <Image source={require('../assets/logo.png')} style={authStyles.logo} />
-          <Text style={authStyles.textoTopo}>Bem vindo ao Citour</Text>
+          <Image source={require('../assets/icon.png')} style={authStyles.logo} />
+          <Text style={authStyles.textoTopo}numberOfLines={1}
+      adjustsFontSizeToFit={true}
+      minimumFontScale={0.6}>Bem vindo ao Citour</Text>
         </View>
       </View>
 
@@ -75,15 +77,15 @@ export default function Register({ aoCadastrar, irParaLogin }) {
         />
 
         <TouchableOpacity style={authStyles.botaoSubmmit} onPress={verificarCadastro}>
-          <Text style={authStyles.textoBotao}>Cadastrar</Text>
+          <Text style={authStyles.textoBotao}adjustsFontSizeToFit={true}>Cadastrar</Text>
         </TouchableOpacity>
       </View>
 
       {/* Rodapé para Voltar ao Login */}
       <View style={authStyles.containerNext}>
-  <Text style={authStyles.textoNormal}>Já tem uma conta? </Text>
+  <Text style={authStyles.textoNormal}adjustsFontSizeToFit={true}>Já tem uma conta? </Text>
   <TouchableOpacity onPress={irParaLogin}>
-    <Text style={authStyles.linkNext}>Faça Login</Text>
+    <Text style={authStyles.linkNext}adjustsFontSizeToFit={true}>Faça Login</Text>
   </TouchableOpacity>
 </View>
     </View>

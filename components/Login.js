@@ -20,10 +20,12 @@ export default function Login({ aoLogar, irParaCadastro }) {
       <View style={authStyles.topoAzul}>
       <View style={authStyles.conatinerLogo}>
         <Image
-        source={require('../assets/logo.png')}
+        source={require('../assets/icon.png')}
         style={authStyles.logo}
         />
-        <Text style={authStyles.textoTopo}>Bem vindo ao Citour</Text>
+        <Text style={authStyles.textoTopo}numberOfLines={1}
+      adjustsFontSizeToFit={true}
+      minimumFontScale={0.6}>Bem vindo ao Citour</Text>
       </View>
       </View>
         
@@ -52,14 +54,16 @@ export default function Login({ aoLogar, irParaCadastro }) {
         />
 
         <TouchableOpacity style={authStyles.botaoSubmmit} onPress={verificarLogin}>
-          <Text style={authStyles.textoBotao}>Entrar</Text>
+          <Text style={authStyles.textoBotao}adjustsFontSizeToFit={true}>Entrar</Text>
         </TouchableOpacity>
         
       </View>
       <View style={authStyles.containerNext}>
-  <Text style={authStyles.textoNormal}>Não tem uma conta? </Text>
+  <Text style={authStyles.textoNormal}numberOfLines={1}
+      adjustsFontSizeToFit={true}
+      minimumFontScale={0.6}>Não tem uma conta? </Text>
   <TouchableOpacity onPress={irParaCadastro}> 
-    <Text style={authStyles.linkNext}>Cadastre-se</Text>
+    <Text style={authStyles.linkNext}adjustsFontSizeToFit={true}>Cadastre-se</Text>
   </TouchableOpacity>
 </View>
     </View>
