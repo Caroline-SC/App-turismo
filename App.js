@@ -6,6 +6,7 @@ import Home from './components/Home.js';
 import Explore from './components/Explore';
 import PlaceDetail from './components/PlaceDetail';
 import Profile from './components/Profile';
+import Itinerary from './components/Itinerary';
 
 function Conteudo() {
   const [logado, setLogado] = useState(true);
@@ -42,7 +43,9 @@ function Conteudo() {
     if (abaAtiva === 'profile') {
       return <Profile aoMudarAba={mudarAba} aoSair={sair} />;
     }
-
+    if (abaAtiva === 'itinerary') {
+     return <Itinerary aoMudarAba={mudarAba} />;
+    }
     return <Home aoSair={sair} aoMudarAba={mudarAba} />;
   }
 
