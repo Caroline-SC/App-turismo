@@ -5,6 +5,7 @@ import Register from './components/Register';
 import Home from './components/Home.js';
 import Explore from './components/Explore';
 import PlaceDetail from './components/PlaceDetail';
+import Profile from './components/Profile';
 
 function Conteudo() {
   const [logado, setLogado] = useState(true);
@@ -12,10 +13,15 @@ function Conteudo() {
   const [abaAtiva, setAbaAtiva] = useState('home');
   const [localAberto, setLocalAberto] = useState(null);
 
-  // Troca de aba e fecha os detalhes do local, se estiverem abertos
   const mudarAba = (aba) => {
     setLocalAberto(null);
     setAbaAtiva(aba);
+  };
+
+  const sair = () => {
+    setLogado(false);
+    setAbaAtiva('home');
+    setTelaAtual('login');
   };
 
   if (logado) {
@@ -33,7 +39,11 @@ function Conteudo() {
       return <Explore aoMudarAba={mudarAba} aoAbrirLocal={setLocalAberto} />;
     }
 
-    return <Home aoSair={() => {}} aoMudarAba={mudarAba} />;
+    if (abaAtiva === 'profile') {
+      return <Profile aoMudarAba={mudarAba} aoSair={sair} />;
+    }
+
+    return <Home aoSair={sair} aoMudarAba={mudarAba} />;
   }
 
   if (telaAtual === 'login') {

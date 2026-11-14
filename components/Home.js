@@ -153,6 +153,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#e0f7fa',
     marginTop: 2,
+    
   },
   conteudoScroll: {
     paddingHorizontal: 20,

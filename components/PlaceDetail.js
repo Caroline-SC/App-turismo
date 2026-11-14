@@ -5,14 +5,20 @@ import Navbar from './Navbar';
 
 export default function PlaceDetail({ local, aoVoltar, aoMudarAba }) {
   const [opcao, setOpcao] = useState('resumo');
+  const [favoritado, setFavoritado] = useState(false);
 
-  const abrirResumo = () => setOpcao('resumo');
-  const abrirHistoria = () => setOpcao('historia');
+  const favoritar = () => {
+  if (!favoritado) {
+    alert('Item favoritado');
+  }
+  setFavoritado(!favoritado);
+}; // 'resumo' ou 'historia'
 
   return (
     <View style={styles.container}>
       <StatusBar hidden={true} />
 
+      {/* Topo */}
       <View style={styles.topo}>
         <TouchableOpacity style={styles.voltar} onPress={aoVoltar}>
           <Ionicons name="arrow-back" size={24} color="#ffffff" />
@@ -23,10 +29,11 @@ export default function PlaceDetail({ local, aoVoltar, aoMudarAba }) {
         </Text>
       </View>
 
+      {/* Duas opções */}
       <View style={styles.seletor}>
         <TouchableOpacity
           style={[styles.opcao, opcao === 'resumo' && styles.opcaoAtiva]}
-          onPress={abrirResumo}
+          onPress={() => setOpcao('resumo')}
         >
           <Text style={[styles.textoOpcao, opcao === 'resumo' && styles.textoOpcaoAtiva]}>
             Resumo
@@ -35,7 +42,7 @@ export default function PlaceDetail({ local, aoVoltar, aoMudarAba }) {
 
         <TouchableOpacity
           style={[styles.opcao, opcao === 'historia' && styles.opcaoAtiva]}
-          onPress={abrirHistoria}
+          onPress={() => setOpcao('historia')}
         >
           <Text style={[styles.textoOpcao, opcao === 'historia' && styles.textoOpcaoAtiva]}>
             História completa
@@ -44,7 +51,11 @@ export default function PlaceDetail({ local, aoVoltar, aoMudarAba }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
-        {opcao === 'resumo' ? <Resumo local={local} /> : <Historia local={local} />}
+        {opcao === 'resumo' ? (
+  <Resumo local={local} favoritado={favoritado} aoFavoritar={favoritar} />
+) : (
+  <Historia local={local} />
+)}
       </ScrollView>
 
       <Navbar abaAtiva="explore" aoMudarAba={aoMudarAba} />
@@ -52,7 +63,7 @@ export default function PlaceDetail({ local, aoVoltar, aoMudarAba }) {
   );
 }
 
-function Resumo({ local }) {
+function Resumo({ local, favoritado, aoFavoritar }) {
   return (
     <View style={{ gap: 18 }}>
       <View style={styles.etiquetas}>
@@ -64,6 +75,14 @@ function Resumo({ local }) {
             {local.gratuito ? 'Gratuito' : 'Pago'}
           </Text>
         </View>
+
+        <TouchableOpacity style={styles.botaoCoracao} onPress={aoFavoritar} activeOpacity={0.7}>
+          <Ionicons
+            name={favoritado ? 'heart' : 'heart-outline'}
+            size={22}
+            color={favoritado ? '#e53935' : '#666666'}
+          />
+        </TouchableOpacity>
       </View>
 
       <Bloco titulo="Resumo da história">
@@ -96,6 +115,7 @@ function Historia({ local }) {
         const ultimo = i === local.historia.length - 1;
         return (
           <View key={i} style={styles.linhaTempo}>
+            {/* Bolinha + linha vertical */}
             <View style={styles.coluna}>
               <View style={styles.ponto} />
               {!ultimo && <View style={styles.linha} />}
@@ -106,12 +126,12 @@ function Historia({ local }) {
               <Text style={styles.tituloItem}>{item.titulo}</Text>
               <Text style={styles.texto}>{item.texto}</Text>
 
-              {item.curiosidade ? (
+              {item.curiosidade && (
                 <View style={styles.curiosidade}>
                   <Text style={styles.rotuloCuriosidade}>Curiosidade</Text>
                   <Text style={styles.texto}>{item.curiosidade}</Text>
                 </View>
-              ) : null}
+              )}
             </View>
           </View>
         );
@@ -153,16 +173,13 @@ const styles = StyleSheet.create({
   },
   opcao: { flex: 1, paddingVertical: 10, borderRadius: 9, alignItems: 'center' },
   opcaoAtiva: { backgroundColor: '#0097b2' },
-  textoOpcao: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#666666',
-  textAlign: 'center',
-  minWidth: 130,
-},
-textoOpcaoAtiva: { color: '#ffffff', fontWeight: 'normal' },
+  textoOpcao: { fontSize: 14, fontWeight: '600', color: '#666666' ,
+    minWidth:130,
+    textAlign: 'center',
+  },
+  textoOpcaoAtiva: { color: '#ffffff' },
 
-  conteudo: { padding: 20, paddingBottom: 130 },
+  conteudo: { padding: 20, paddingBottom: 100 },
 
   etiquetas: { flexDirection: 'row', gap: 8 },
   etiqueta: {
@@ -170,18 +187,14 @@ textoOpcaoAtiva: { color: '#ffffff', fontWeight: 'normal' },
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
-    minWidth: 90,
-    alignItems: 'center',
   },
   etiquetaVerde: { backgroundColor: '#e8f5e9' },
   etiquetaCinza: { backgroundColor: '#eeeeee' },
-  textoEtiqueta: {
-  fontSize: 12,
-  fontWeight: 'normal',
-  color: '#0097b2',
-  textAlign: 'center',
-  minWidth: 70,
-},
+  textoEtiqueta: { fontSize: 12, fontWeight: '700', color: '#0097b2' ,
+    minWidth:70,
+    textAlign: 'center',
+  },
+
   bloco: {
     backgroundColor: '#f5f5f5',
     borderRadius: 15,
@@ -211,10 +224,5 @@ textoOpcaoAtiva: { color: '#ffffff', fontWeight: 'normal' },
     marginTop: 8,
     gap: 2,
   },
-  rotuloCuriosidade: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#0097b2',
-    paddingHorizontal: 2,
-  },
+  rotuloCuriosidade: { fontSize: 12, fontWeight: 'bold', color: '#0097b2' },
 });

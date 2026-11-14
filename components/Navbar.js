@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -8,7 +8,6 @@ const COR_INATIVA = '#666666';
 const abas = [
   { id: 'home', label: 'Início', icone: 'home-outline', iconeAtivo: 'home' },
   { id: 'explore', label: 'Explorar', icone: 'compass-outline', iconeAtivo: 'compass' },
-  { id: 'favorites', label: 'Favoritos', icone: 'heart-outline', iconeAtivo: 'heart' },
   { id: 'itinerary', label: 'Roteiro IA', icone: 'sparkles-outline', iconeAtivo: 'sparkles' },
   { id: 'profile', label: 'Perfil', icone: 'person-outline', iconeAtivo: 'person' },
 ];
@@ -16,14 +15,11 @@ const abas = [
 export default function Navbar({ abaAtiva, aoMudarAba = () => {}, totalFavoritos = 0 }) {
   const insets = useSafeAreaInsets();
 
-  // Se o aparelho não informar a área segura no Android, usa um mínimo de 24
-  const margemInferior = Math.max(insets.bottom, Platform.OS === 'android' ? 24 : 0);
-
   return (
     <View
       style={[
         styles.navbar,
-        { height: 70 + margemInferior, paddingBottom: margemInferior },
+        { height: 70 + insets.bottom, paddingBottom: insets.bottom },
       ]}
     >
       {abas.map((aba) => {
@@ -82,11 +78,11 @@ const styles = StyleSheet.create({
   textoNavbar: {
     fontSize: 11,
     marginTop: 4,
+    minWidth:130,
     textAlign: 'center',
-    minWidth: 70,
   },
   textoAtivo: {
-    fontWeight: 'normal',
+    fontWeight: 'bold',
   },
   badge: {
     position: 'absolute',
