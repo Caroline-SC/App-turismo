@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import Login from './components/Login'; 
 import Register from './components/Register'; 
+import Home from './components/Home.js'
+
 
 
 export default function App() {
@@ -9,7 +11,7 @@ export default function App() {
 
   if (logado) {
     return (
-      alert('Login realizado com')
+      <Home aoSair={()=> {}}/>
     );
   }
 
