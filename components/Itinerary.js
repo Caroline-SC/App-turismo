@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   TextInput,
   StatusBar,
-  Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Navbar from './Navbar';
-import { places } from './place';
+import { useApp } from '../context/AppContext';
+import { api } from '../services/api';
+import { adaptarRoteiro, interessesApi, normalizar } from '../services/adapters';
+import { avisar, confirmar } from '../services/notify';
 
 const OPCOES_DIAS = ['1 dia', '2 dias', '3 dias', '4 dias', '5 dias', '7 dias'];
 
@@ -26,6 +28,11 @@ const OPCOES_INTERESSES = [
 ];
 
 export default function Itinerary({ aoMudarAba }) {
+  const { pontos: places, carregandoPontos, erroPontos } = useApp();
+  const [gerando, setGerando] = useState(false);
+  const [carregandoSalvos, setCarregandoSalvos] = useState(false);
+  const [erroSalvos, setErroSalvos] = useState('');
+  const travaGeracao = useRef(false);
   const [abaInterna, setAbaInterna] = useState('criar'); // 'criar' ou 'salvos'
   const [cidade, setCidade] = useState('Salvador');
   const [diasSelecionados, setDiasSelecionados] = useState('3 dias');
@@ -42,6 +49,30 @@ export default function Itinerary({ aoMudarAba }) {
     'Gastronomia Típica',
   ]);
   const [roteirosSalvos, setRoteirosSalvos] = useState([]);
+  const mostrarSalvos = () => {
+    if (abaInterna === 'salvos') return;
+    setCarregandoSalvos(true); setErroSalvos(''); setAbaInterna('salvos');
+  };
+  useEffect(() => {
+    if (abaInterna !== 'salvos') return;
+    let ativo = true;
+    api.roteiros().then(r => { if (ativo) setRoteirosSalvos(atual => r.roteiros.map(item => atual.find(x => x.id === item._id && x.plano) || adaptarRoteiro(item))); })
+      .catch(err => { if (ativo) setErroSalvos(err.message); })
+      .finally(() => { if (ativo) setCarregandoSalvos(false); });
+    return () => { ativo = false; };
+  }, [abaInterna]);
+  const abrirRoteiro = async id => {
+    try {
+      const r = await api.roteiro(id);
+      setRoteirosSalvos(atual => atual.map(x => x.id === id ? adaptarRoteiro(r.roteiro) : x));
+      if (r.roteiro.plano.avisos?.length) avisar('Observações do roteiro', r.roteiro.plano.avisos.join('\n\n'));
+    } catch (err) { avisar('Roteiro', err.message); }
+  };
+  const excluirRoteiro = async id => {
+    if (!await confirmar('Excluir roteiro', 'Deseja excluir este roteiro salvo?')) return;
+    try { await api.excluirRoteiro(id); setRoteirosSalvos(atual => atual.filter(r => r.id !== id)); }
+    catch (err) { avisar('Excluir roteiro', err.message); }
+  };
 
   const alternarInteresse = (item) => {
     setInteresses((atual) =>
@@ -50,62 +81,57 @@ export default function Itinerary({ aoMudarAba }) {
   };
 
   // Filtra os locais de place.js conforme o texto digitado
-  const termoBusca = buscaPonto.trim().toLowerCase();
+  const termoBusca = normalizar(buscaPonto);
   const sugestoesPontos = termoBusca
     ? places.filter(
         (p) =>
-          p.nome.toLowerCase().includes(termoBusca) &&
-          !pontosEscolhidos.includes(p.nome)
+          normalizar(p.nome).includes(termoBusca) &&
+          !pontosEscolhidos.some(x => x.id === p.id)
       )
     : [];
 
   const adicionarPonto = (nomePonto) => {
     const limpo = nomePonto.trim();
     if (!limpo) return;
-    if (!pontosEscolhidos.includes(limpo)) {
-      setPontosEscolhidos((atual) => [...atual, limpo]);
+    const ponto = places.find(p => normalizar(p.nome) === normalizar(limpo));
+    if (!ponto) { avisar('Ponto turístico', 'Selecione um local existente nas sugestões da API.'); return; }
+    if (!pontosEscolhidos.some(p => p.id === ponto.id)) {
+      setPontosEscolhidos((atual) => [...atual, ponto]);
     }
     setBuscaPonto('');
   };
 
   const removerPonto = (nomePonto) => {
-    setPontosEscolhidos((atual) => atual.filter((p) => p !== nomePonto));
+    setPontosEscolhidos((atual) => atual.filter((p) => p.id !== nomePonto));
   };
 
-  const gerarRoteiro = () => {
+  const gerarRoteiro = async () => {
+    if (travaGeracao.current) return;
+    if (normalizar(cidade) !== 'salvador') { avisar('Destino', 'A base atual da API atende Salvador.'); return; }
     if (!cidade.trim()) {
-      Alert.alert('Atenção', 'Informe a cidade de destino.');
+      avisar('Atenção', 'Informe a cidade de destino.');
       return;
     }
 
     if (!horaInicio.trim() || !horaFim.trim()) {
-      Alert.alert('Atenção', 'Informe o horário de início e término.');
+      avisar('Atenção', 'Informe o horário de início e término.');
       return;
     }
 
     if (interesses.length === 0 && pontosEscolhidos.length === 0) {
-      Alert.alert('Atenção', 'Selecione pelo menos um interesse ou ponto turístico.');
+      avisar('Atenção', 'Selecione pelo menos um interesse ou ponto turístico.');
       return;
     }
 
-    const textoPontos =
-      pontosEscolhidos.length > 0
-        ? ` Incluindo: ${pontosEscolhidos.join(', ')}.`
-        : '';
-
-    const novoRoteiro = {
-      id: Date.now().toString(),
-      cidade: cidade.trim(),
-      dias: diasSelecionados,
-      horario: `${horaInicio.trim()} às ${horaFim.trim()}`,
-      pontos: [...pontosEscolhidos],
-      interesses: [...interesses],
-      resumo: `Roteiro de ${diasSelecionados} em ${cidade.trim()} (${horaInicio.trim()} até ${horaFim.trim()}) focado em ${interesses.join(', ')}.${textoPontos}`,
-    };
-
-    setRoteirosSalvos((anteriores) => [novoRoteiro, ...anteriores]);
-    Alert.alert('Roteiro Gerado!', 'Seu roteiro foi criado e salvo na aba "Salvos".');
-    setAbaInterna('salvos');
+    travaGeracao.current = true; setGerando(true);
+    try {
+      const r = await api.criarRoteiro({ nome: `Passeio em ${cidade.trim()}`, dias: Number.parseInt(diasSelecionados, 10), horaInicio: horaInicio.trim(), horaFim: horaFim.trim(), pessoas: 1,
+        transporte: 'a_pe', interesses: interessesApi(interesses), pontosObrigatorios: pontosEscolhidos.map(p => p.id) });
+      setRoteirosSalvos(atual => [adaptarRoteiro(r.roteiro), ...atual]);
+      mostrarSalvos();
+      avisar('Roteiro gerado!', 'Seu roteiro foi criado e salvo na API. Toque no roteiro para consultar detalhes e avisos.');
+    } catch (err) { avisar('Não foi possível gerar', err.message); }
+    finally { travaGeracao.current = false; setGerando(false); }
   };
 
   return (
@@ -145,7 +171,7 @@ export default function Itinerary({ aoMudarAba }) {
 
           <TouchableOpacity
             style={[styles.abaTopo, abaInterna === 'salvos' && styles.abaTopoAtiva]}
-            onPress={() => setAbaInterna('salvos')}
+            onPress={mostrarSalvos}
             activeOpacity={0.8}
           >
             <Text
@@ -225,7 +251,7 @@ export default function Itinerary({ aoMudarAba }) {
                 >
                   <Ionicons name="add-outline" size={16} color="#0097b2" />
                   <Text style={styles.textoSugestao}>
-                    Adicionar "{buscaPonto.trim()}" ao roteiro
+                    Adicionar &quot;{buscaPonto.trim()}&quot; ao roteiro
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -235,10 +261,10 @@ export default function Itinerary({ aoMudarAba }) {
             {pontosEscolhidos.length > 0 && (
               <View style={styles.listaPontosSelecionados}>
                 {pontosEscolhidos.map((ponto) => (
-                  <View key={ponto} style={styles.tagPonto}>
+                  <View key={ponto.id} style={styles.tagPonto}>
                     <Ionicons name="location" size={13} color="#0097b2" />
-                    <Text style={styles.textoTagPonto}>{ponto}</Text>
-                    <TouchableOpacity onPress={() => removerPonto(ponto)}>
+                    <Text style={styles.textoTagPonto}>{ponto.nome}</Text>
+                    <TouchableOpacity onPress={() => removerPonto(ponto.id)}>
                       <Ionicons name="close" size={15} color="#0097b2" />
                     </TouchableOpacity>
                   </View>
@@ -334,10 +360,11 @@ export default function Itinerary({ aoMudarAba }) {
             <TouchableOpacity
               style={styles.botaoGerar}
               onPress={gerarRoteiro}
+              disabled={gerando || carregandoPontos || Boolean(erroPontos)}
               activeOpacity={0.8}
             >
               <Ionicons name="sparkles" size={18} color="#ffffff" />
-              <Text style={styles.textoBotaoGerar}>Gerar Roteiro com IA</Text>
+              <Text style={styles.textoBotaoGerar}>{gerando ? 'Gerando roteiro…' : carregandoPontos ? 'Carregando locais…' : erroPontos ? 'Locais indisponíveis' : 'Gerar Roteiro com IA'}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -345,14 +372,14 @@ export default function Itinerary({ aoMudarAba }) {
             {roteirosSalvos.length === 0 ? (
               <View style={styles.cardVazio}>
                 <Ionicons name="map-outline" size={44} color="#b0bec5" />
-                <Text style={styles.tituloVazio}>Nenhum roteiro salvo</Text>
+                <Text style={styles.tituloVazio}>{carregandoSalvos ? 'Carregando roteiros…' : erroSalvos ? 'Não foi possível carregar' : 'Nenhum roteiro salvo'}</Text>
                 <Text style={styles.textoVazio}>
-                  Crie seu primeiro roteiro personalizado na aba "Criar Novo".
+                  {erroSalvos || 'Crie seu primeiro roteiro personalizado na aba "Criar Novo".'}
                 </Text>
               </View>
             ) : (
               roteirosSalvos.map((roteiro) => (
-                <View key={roteiro.id} style={styles.cardSalvo}>
+                <TouchableOpacity key={roteiro.id} style={styles.cardSalvo} onPress={() => abrirRoteiro(roteiro.id)} onLongPress={() => excluirRoteiro(roteiro.id)} accessibilityHint="Toque para carregar o roteiro completo. Segure para excluir.">
                   <View style={styles.topoCardSalvo}>
                     <Text style={styles.cidadeSalva}>
                       {roteiro.cidade} · {roteiro.dias}
@@ -360,7 +387,7 @@ export default function Itinerary({ aoMudarAba }) {
                     <Text style={styles.horarioSalvo}>{roteiro.horario}</Text>
                   </View>
                   <Text style={styles.resumoSalvo}>{roteiro.resumo}</Text>
-                </View>
+                </TouchableOpacity>
               ))
             )}
           </View>

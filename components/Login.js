@@ -1,17 +1,23 @@
 import { useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
 import { authStyles } from '../styles/authStyles';
+import { avisar } from '../services/notify';
 
 export default function Login({ aoLogar, irParaCadastro }) {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [enviando, setEnviando] = useState(false);
 
-  const verificarLogin = () => {
+  const verificarLogin = async () => {
+    if (enviando) return;
     if (email === '' || senha === '') {
-      Alert.alert("Erro", "Por favor, preencha todos os campos.");
+      avisar("Erro", "Por favor, preencha todos os campos.");
       return;
     }
-    aoLogar();
+    setEnviando(true);
+    try { await aoLogar(email, senha); }
+    catch (err) { avisar('Login', err.message); }
+    finally { setEnviando(false); }
   };
 
   return (
@@ -53,8 +59,8 @@ export default function Login({ aoLogar, irParaCadastro }) {
           secureTextEntry={true}
         />
 
-        <TouchableOpacity style={authStyles.botaoSubmmit} onPress={verificarLogin}>
-          <Text style={authStyles.textoBotao}adjustsFontSizeToFit={true}>Entrar</Text>
+        <TouchableOpacity style={authStyles.botaoSubmmit} onPress={verificarLogin} disabled={enviando}>
+          <Text style={authStyles.textoBotao}adjustsFontSizeToFit={true}>{enviando ? 'Entrando…' : 'Entrar'}</Text>
         </TouchableOpacity>
         
       </View>

@@ -1,19 +1,22 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Dimensions, StatusBar } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import TourMap from './TourMap';
 import Navbar from './Navbar';
+import { useApp } from '../context/AppContext';
 
 const LARGURA_CARD = Dimensions.get('window').width - 40;
-const TOTAL_PAGINAS = 3; // Quantidade de slides no carrossel
+const REGIAO_SALVADOR = { latitude: -12.9714, longitude: -38.5014, latitudeDelta: 0.0922, longitudeDelta: 0.0421 };
 
-export default function Home({ aoSair, aoMudarAba }) {
+export default function Home({ aoMudarAba, aoAbrirLocal }) {
+  const { user, pontos, carregandoPontos, erroPontos, carregarPontos } = useApp();
+  const destaques = pontos.slice(0, 3);
   const [paginaAtiva, setPaginaAtiva] = useState(0);
   const scrollRef = useRef(null);
 
   // Carrossel automático
   useEffect(() => {
     const intervalo = setInterval(() => {
-      const proximaPagina = (paginaAtiva + 1) % TOTAL_PAGINAS;
+      const proximaPagina = (paginaAtiva + 1) % Math.max(1, destaques.length);
 
       scrollRef.current?.scrollTo({
         x: proximaPagina * LARGURA_CARD,
@@ -24,20 +27,9 @@ export default function Home({ aoSair, aoMudarAba }) {
     }, 5000);
 
     return () => clearInterval(intervalo);
-  }, [paginaAtiva]);
+  }, [paginaAtiva, destaques.length]);
 
-  const regiaoSalvador = {
-    latitude: -12.9714,
-    longitude: -38.5014,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
-  };
-
-  const pontosTuristicos = [
-    { id: '1', titulo: 'Farol da Barra', lat: -13.0104, lng: -38.5329, cor: 'red' },
-    { id: '2', titulo: 'Ponto Histórico 1', lat: -12.9718, lng: -38.5112, cor: 'red' },
-    { id: '3', titulo: 'Seu Local Atual', lat: -12.9810, lng: -38.5220, cor: 'black' },
-  ];
+  const pontosTuristicos = useMemo(() => pontos.filter(p => Number.isFinite(p.latitude) && Number.isFinite(p.longitude)), [pontos]);
 
   return (
     <View style={styles.container}>
@@ -46,23 +38,14 @@ export default function Home({ aoSair, aoMudarAba }) {
       {/* Topo com saudação */}
       <View style={styles.topoHome}>
         <View>
-          <Text style={styles.boasVindas}>Olá, usuário</Text>
+          <Text style={styles.boasVindas}>Olá, {user?.name || 'usuário'}</Text>
           <Text style={styles.subtitulo}>Você está em Salvador!</Text>
         </View>
       </View>
 
       {/* Mapa */}
       <View style={styles.containerMapa}>
-        <MapView style={styles.mapa} initialRegion={regiaoSalvador} loadingEnabled={true}>
-          {pontosTuristicos.map((ponto) => (
-            <Marker
-              key={ponto.id}
-              coordinate={{ latitude: ponto.lat, longitude: ponto.lng }}
-              title={ponto.titulo}
-              pinColor={ponto.cor}
-            />
-          ))}
-        </MapView>
+        <TourMap style={styles.mapa} regiao={REGIAO_SALVADOR} pontos={pontosTuristicos} aoAbrirLocal={aoAbrirLocal} />
       </View>
 
       {/* Conteúdo rolável abaixo do mapa */}
@@ -84,31 +67,18 @@ export default function Home({ aoSair, aoMudarAba }) {
           }}
           scrollEventThrottle={16}
         >
-          <TouchableOpacity style={styles.cardLink} onPress={() => alert('Farol da Barra')}>
+          {destaques.map(local => <TouchableOpacity key={local.id} style={styles.cardLink} onPress={() => aoAbrirLocal(local)}>
             <View style={styles.infoCard}>
-              <Text style={styles.tituloCard}>Farol da Barra ➔</Text>
-              <Text style={styles.descricaoCard}>Conheça o monumento histórico e o Museu Náutico.</Text>
+              <Text style={styles.tituloCard}>{local.nome} ➔</Text>
+              <Text style={styles.descricaoCard}>{local.descricaoCurta}</Text>
             </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.cardLink} onPress={() => alert('Pelourinho')}>
-            <View style={styles.infoCard}>
-              <Text style={styles.tituloCard}>Pelourinho ➔</Text>
-              <Text style={styles.descricaoCard}>Explore o centro histórico cheio de cores e cultura.</Text>
-            </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.cardLink} onPress={() => alert('Elevador Lacerda')}>
-            <View style={styles.infoCard}>
-              <Text style={styles.tituloCard}>Elevador Lacerda ➔</Text>
-              <Text style={styles.descricaoCard}>Aproveite a vista incrível conectando as cidades.</Text>
-            </View>
-          </TouchableOpacity>
+          </TouchableOpacity>)}
+          {!destaques.length && <TouchableOpacity style={styles.cardLink} onPress={carregarPontos}><View style={styles.infoCard}><Text style={styles.descricaoCard}>{carregandoPontos ? 'Carregando destinos…' : erroPontos || 'Nenhum destino disponível.'}</Text></View></TouchableOpacity>}
         </ScrollView>
 
         {/* Pontinhos indicadores */}
         <View style={styles.containerBolinhas}>
-          {[0, 1, 2].map((index) => (
+          {destaques.map((_, index) => (
             <View
               key={index}
               style={[styles.bolinha, paginaAtiva === index ? styles.bolinhaAtiva : styles.bolinhaInativa]}

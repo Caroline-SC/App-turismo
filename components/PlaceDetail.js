@@ -1,17 +1,18 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, StatusBar, Linking } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Navbar from './Navbar';
+import { useApp } from '../context/AppContext';
+import { avisar } from '../services/notify';
 
 export default function PlaceDetail({ local, aoVoltar, aoMudarAba }) {
   const [opcao, setOpcao] = useState('resumo');
-  const [favoritado, setFavoritado] = useState(false);
+  const { favoritos, alternarFavorito } = useApp();
+  const favoritado = favoritos.some(p => p.id === local.id);
 
-  const favoritar = () => {
-  if (!favoritado) {
-    alert('Item favoritado');
-  }
-  setFavoritado(!favoritado);
+  const favoritar = async () => {
+  try { await alternarFavorito(local.id); }
+  catch (err) { avisar('Favoritos', err.message); }
 }; // 'resumo' ou 'historia'
 
   return (
@@ -76,7 +77,7 @@ function Resumo({ local, favoritado, aoFavoritar }) {
           </Text>
         </View>
 
-        <TouchableOpacity style={styles.botaoCoracao} onPress={aoFavoritar} activeOpacity={0.7}>
+        <TouchableOpacity onPress={aoFavoritar} activeOpacity={0.7}>
           <Ionicons
             name={favoritado ? 'heart' : 'heart-outline'}
             size={22}
@@ -90,7 +91,7 @@ function Resumo({ local, favoritado, aoFavoritar }) {
       </Bloco>
 
       <Bloco titulo="Como chegar">
-        <Text style={styles.texto}>{local.comoChegar}</Text>
+        <Text style={styles.texto} onPress={Number.isFinite(local.latitude) && Number.isFinite(local.longitude) ? () => Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${local.latitude},${local.longitude}`).catch(err => avisar('Mapa', err.message)) : undefined}>{local.comoChegar}</Text>
       </Bloco>
 
       <Bloco titulo="Entrada">

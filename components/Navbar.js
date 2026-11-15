@@ -1,10 +1,11 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 const COR_ATIVA = '#0097b2';
 const COR_INATIVA = '#666666';
 
+/** @type {{id: string, label: string, icone: import('react').ComponentProps<typeof Ionicons>['name'], iconeAtivo: import('react').ComponentProps<typeof Ionicons>['name']}[]} */
 const abas = [
   { id: 'home', label: 'Início', icone: 'home-outline', iconeAtivo: 'home' },
   { id: 'explore', label: 'Explorar', icone: 'compass-outline', iconeAtivo: 'compass' },
@@ -12,7 +13,7 @@ const abas = [
   { id: 'profile', label: 'Perfil', icone: 'person-outline', iconeAtivo: 'person' },
 ];
 
-export default function Navbar({ abaAtiva, aoMudarAba = () => {}, totalFavoritos = 0 }) {
+export default function Navbar({ abaAtiva, aoMudarAba = (_aba) => {}, totalFavoritos = 0 }) {
   const insets = useSafeAreaInsets();
 
   return (

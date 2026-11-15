@@ -1,26 +1,33 @@
 import  { useState } from 'react';
-import {Text, View, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
+import {Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
 import { authStyles } from '../styles/authStyles';
+import { api } from '../services/api';
+import { avisar } from '../services/notify';
 
 export default function Register({ aoCadastrar, irParaLogin }) {
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [enviando, setEnviando] = useState(false);
 
-  const verificarCadastro = () => {
+  const verificarCadastro = async () => {
+    if (enviando) return;
     if (nome === '' || email === '' || senha === '' || confirmarSenha === '') {
-      Alert.alert("Erro", "Por favor, preencha todos os campos.");
+      avisar("Erro", "Por favor, preencha todos os campos.");
       return;
     }
 
     if (senha !== confirmarSenha) {
-      Alert.alert("Erro", "As senhas não coincidem.");
+      avisar("Erro", "As senhas não coincidem.");
       return;
     }
 
     // Passa os dados para a função de cadastro se tudo estiver correto
-    aoCadastrar({ nome, email, senha });
+    setEnviando(true);
+    try { await api.register(nome, email, senha); avisar('Cadastro', 'Cadastro realizado! Faça login para continuar.'); aoCadastrar(); }
+    catch (err) { avisar('Cadastro', err.message); }
+    finally { setEnviando(false); }
   };
 
   return (
@@ -76,8 +83,8 @@ export default function Register({ aoCadastrar, irParaLogin }) {
           secureTextEntry={true} 
         />
 
-        <TouchableOpacity style={authStyles.botaoSubmmit} onPress={verificarCadastro}>
-          <Text style={authStyles.textoBotao}adjustsFontSizeToFit={true}>Cadastrar</Text>
+        <TouchableOpacity style={authStyles.botaoSubmmit} onPress={verificarCadastro} disabled={enviando}>
+          <Text style={authStyles.textoBotao}adjustsFontSizeToFit={true}>{enviando ? 'Cadastrando…' : 'Cadastrar'}</Text>
         </TouchableOpacity>
       </View>
 

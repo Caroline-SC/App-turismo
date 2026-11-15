@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Navbar from './Navbar';
+import { avisar } from '../services/notify';
+import { interessesApi } from '../services/adapters';
 
 const OPCOES = [
   'Histórico',
@@ -23,14 +25,22 @@ export default function Profile({
   email = 'email@exemplo.com',
   favoritos = [],
   visitados = [],
+  interesses = [],
+  aoSalvarInteresses,
+  aoAbrirLocal,
 }) {
   const [aba, setAba] = useState('preferencias');
-  const [escolhidas, setEscolhidas] = useState(['Histórico', 'Cultura']);
+  const [salvando, setSalvando] = useState(false);
+  const ids = interessesApi(interesses);
+  const escolhidas = OPCOES.filter(op => interessesApi([op]).some(i => ids.includes(i)));
 
-  const alternar = (item) => {
-    setEscolhidas((atual) =>
-      atual.includes(item) ? atual.filter((i) => i !== item) : [...atual, item]
-    );
+  const alternar = async (item) => {
+    if (salvando) return;
+    const novas = escolhidas.includes(item) ? escolhidas.filter(i => i !== item) : [...escolhidas, item];
+    setSalvando(true);
+    try { await aoSalvarInteresses(interessesApi(novas)); }
+    catch (err) { avisar('Preferências', err.message); }
+    finally { setSalvando(false); }
   };
 
   return (
@@ -102,6 +112,7 @@ export default function Profile({
                     key={item}
                     style={[styles.chip, ativo && styles.chipAtivo]}
                     onPress={() => alternar(item)}
+                    disabled={salvando}
                     activeOpacity={0.7}
                   >
                     {ativo && <Ionicons name="checkmark" size={14} color="#0097b2" />}
@@ -126,13 +137,13 @@ export default function Profile({
               </View>
             ) : (
               favoritos.map((local) => (
-                <View key={local.id} style={styles.itemFavorito}>
+                <TouchableOpacity key={local.id} style={styles.itemFavorito} onPress={() => aoAbrirLocal(local)}>
                   <Ionicons name="heart" size={18} color="#e53935" />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.nomeFavorito}>{local.nome}</Text>
                     <Text style={styles.bairroFavorito}>{local.bairro}</Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               ))
             )}
           </View>

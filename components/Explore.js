@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, StatusBar } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Navbar from './Navbar';
-import { places } from './place';
+import { useApp } from '../context/AppContext';
+import { normalizar } from '../services/adapters';
 
 export default function Explore({ aoMudarAba, aoAbrirLocal }) {
   const [busca, setBusca] = useState('');
+  const { pontos: places, carregandoPontos, erroPontos, carregarPontos } = useApp();
 
-  const termo = busca.trim().toLowerCase();
+  const termo = normalizar(busca);
   const resultados = places.filter(
-    (p) => p.nome.toLowerCase().includes(termo) || p.bairro.toLowerCase().includes(termo)
+    (p) => normalizar(p.nome).includes(termo) || normalizar(p.bairro).includes(termo)
   );
 
   return (
@@ -45,7 +47,7 @@ export default function Explore({ aoMudarAba, aoAbrirLocal }) {
         <Text style={styles.tituloSecao}>{termo ? 'Resultados' : 'Perto de você'}</Text>
 
         {resultados.length === 0 && (
-          <Text style={styles.vazio}>Nenhum local encontrado.</Text>
+          <Text style={styles.vazio} onPress={erroPontos ? carregarPontos : undefined}>{carregandoPontos ? 'Carregando locais…' : erroPontos ? `${erroPontos} Toque para tentar novamente.` : 'Nenhum local encontrado.'}</Text>
         )}
 
         {resultados.map((local) => (

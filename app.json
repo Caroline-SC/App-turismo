@@ -21,7 +21,9 @@
       "favicon": "./assets/icon.png"
     },
     "plugins": [
-      "expo-status-bar"
-    ]
+      "expo-status-bar",
+      "expo-router"
+    ],
+    "scheme": "citour"
   }
 }
