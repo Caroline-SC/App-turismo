@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   StyleSheet,
   Text,
@@ -7,6 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
   StatusBar,
+  useWindowDimensions,
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Navbar from './Navbar';
@@ -14,8 +16,9 @@ import { useApp } from '../context/AppContext';
 import { api } from '../services/api';
 import { adaptarRoteiro, interessesApi, normalizar } from '../services/adapters';
 import { avisar, confirmar } from '../services/notify';
+import { larguraRotulo } from '../services/labels';
 
-const OPCOES_DIAS = ['1 dia', '2 dias', '3 dias', '4 dias', '5 dias', '7 dias'];
+const OPCOES_DIAS = Array.from({ length: 14 }, (_, i) => `${i + 1} ${i ? 'dias' : 'dia'}`);
 
 const OPCOES_INTERESSES = [
   'História Colonial',
@@ -27,14 +30,18 @@ const OPCOES_INTERESSES = [
   'Música e Boemia',
 ];
 
-export default function Itinerary({ aoMudarAba }) {
+export default function Itinerary({ aoMudarAba, aoAbrirRoteiro }) {
+  const { width, fontScale } = useWindowDimensions();
   const { pontos: places, carregandoPontos, erroPontos } = useApp();
   const [gerando, setGerando] = useState(false);
   const [carregandoSalvos, setCarregandoSalvos] = useState(false);
   const [erroSalvos, setErroSalvos] = useState('');
+  const pedidoSalvos = useRef(0);
   const travaGeracao = useRef(false);
   const [abaInterna, setAbaInterna] = useState('criar'); // 'criar' ou 'salvos'
   const [cidade, setCidade] = useState('Salvador');
+  const [pessoas, setPessoas] = useState('1');
+  const [transporte, setTransporte] = useState('a_pe');
   const [diasSelecionados, setDiasSelecionados] = useState('3 dias');
 
   // Novos estados: Horário e Pesquisa de pontos específicos
@@ -53,20 +60,20 @@ export default function Itinerary({ aoMudarAba }) {
     if (abaInterna === 'salvos') return;
     setCarregandoSalvos(true); setErroSalvos(''); setAbaInterna('salvos');
   };
-  useEffect(() => {
+  const carregarSalvos = useCallback(() => {
+    const versao = ++pedidoSalvos.current;
+    setCarregandoSalvos(true); setErroSalvos('');
+    api.roteiros().then(r => { if (pedidoSalvos.current === versao) setRoteirosSalvos(r.roteiros.map(adaptarRoteiro)); })
+      .catch(err => { if (pedidoSalvos.current === versao) setErroSalvos(err.message); })
+      .finally(() => { if (pedidoSalvos.current === versao) setCarregandoSalvos(false); });
+  }, []);
+  useFocusEffect(useCallback(() => {
     if (abaInterna !== 'salvos') return;
-    let ativo = true;
-    api.roteiros().then(r => { if (ativo) setRoteirosSalvos(atual => r.roteiros.map(item => atual.find(x => x.id === item._id && x.plano) || adaptarRoteiro(item))); })
-      .catch(err => { if (ativo) setErroSalvos(err.message); })
-      .finally(() => { if (ativo) setCarregandoSalvos(false); });
-    return () => { ativo = false; };
-  }, [abaInterna]);
+    carregarSalvos();
+    return () => { pedidoSalvos.current++; };
+  }, [abaInterna, carregarSalvos]));
   const abrirRoteiro = async id => {
-    try {
-      const r = await api.roteiro(id);
-      setRoteirosSalvos(atual => atual.map(x => x.id === id ? adaptarRoteiro(r.roteiro) : x));
-      if (r.roteiro.plano.avisos?.length) avisar('Observações do roteiro', r.roteiro.plano.avisos.join('\n\n'));
-    } catch (err) { avisar('Roteiro', err.message); }
+    aoAbrirRoteiro(id);
   };
   const excluirRoteiro = async id => {
     if (!await confirmar('Excluir roteiro', 'Deseja excluir este roteiro salvo?')) return;
@@ -122,14 +129,16 @@ export default function Itinerary({ aoMudarAba }) {
       avisar('Atenção', 'Selecione pelo menos um interesse ou ponto turístico.');
       return;
     }
+    if (!/^\d+$/.test(pessoas) || Number(pessoas) < 1 || Number(pessoas) > 100) { avisar('Grupo', 'Informe entre 1 e 100 pessoas.'); return; }
+    if (![horaInicio, horaFim].every(h => /^([01]\d|2[0-3]):[0-5]\d$/.test(h))) { avisar('Horário', 'Use horários no formato HH:mm, como 09:00.'); return; }
 
     travaGeracao.current = true; setGerando(true);
     try {
-      const r = await api.criarRoteiro({ nome: `Passeio em ${cidade.trim()}`, dias: Number.parseInt(diasSelecionados, 10), horaInicio: horaInicio.trim(), horaFim: horaFim.trim(), pessoas: 1,
-        transporte: 'a_pe', interesses: interessesApi(interesses), pontosObrigatorios: pontosEscolhidos.map(p => p.id) });
+      const r = await api.criarRoteiro({ nome: `Passeio em ${cidade.trim()}`, dias: Number.parseInt(diasSelecionados, 10), horaInicio: horaInicio.trim(), horaFim: horaFim.trim(), pessoas: Number(pessoas),
+        transporte, interesses: interessesApi(interesses), pontosObrigatorios: pontosEscolhidos.map(p => p.id) });
       setRoteirosSalvos(atual => [adaptarRoteiro(r.roteiro), ...atual]);
       mostrarSalvos();
-      avisar('Roteiro gerado!', 'Seu roteiro foi criado e salvo na API. Toque no roteiro para consultar detalhes e avisos.');
+      aoAbrirRoteiro(r.roteiro._id);
     } catch (err) { avisar('Não foi possível gerar', err.message); }
     finally { travaGeracao.current = false; setGerando(false); }
   };
@@ -309,6 +318,10 @@ export default function Itinerary({ aoMudarAba }) {
             </View>
 
             {/* Quantidade de Dias */}
+            <Text style={styles.rotuloCampo}>Quantas pessoas vão?</Text>
+            <TextInput style={styles.inputPadrao} value={pessoas} onChangeText={setPessoas} keyboardType="number-pad" maxLength={3} accessibilityLabel="Quantidade de pessoas" />
+            <Text style={styles.rotuloCampo}>Como vão se deslocar?</Text>
+            <View style={styles.gradeDias}>{[{ id: 'a_pe', texto: 'A pé' }, { id: 'carro', texto: 'De carro' }].map(opcao => <TouchableOpacity key={opcao.id} style={[styles.botaoDia, transporte === opcao.id && styles.botaoDiaAtivo]} onPress={() => setTransporte(opcao.id)}><Text style={[styles.textoDia, transporte === opcao.id && styles.textoDiaAtivo]}>{opcao.texto}</Text></TouchableOpacity>)}</View>
             <Text style={styles.rotuloCampo}>Quantidade de Dias</Text>
             <View style={styles.gradeDias}>
               {OPCOES_DIAS.map((dia) => {
@@ -346,6 +359,7 @@ export default function Itinerary({ aoMudarAba }) {
                     <Text
                       style={[
                         styles.textoChip,
+                        { minWidth: Math.min(Math.max(80, width - 105), larguraRotulo(item, 13.5, fontScale, 90)) },
                         selecionado && styles.textoChipSelecionado,
                       ]}
                     >
@@ -370,13 +384,13 @@ export default function Itinerary({ aoMudarAba }) {
         ) : (
           <View style={{ gap: 14 }}>
             {roteirosSalvos.length === 0 ? (
-              <View style={styles.cardVazio}>
+              <TouchableOpacity style={styles.cardVazio} disabled={carregandoSalvos} onPress={carregarSalvos} accessibilityLabel="Atualizar meus roteiros">
                 <Ionicons name="map-outline" size={44} color="#b0bec5" />
                 <Text style={styles.tituloVazio}>{carregandoSalvos ? 'Carregando roteiros…' : erroSalvos ? 'Não foi possível carregar' : 'Nenhum roteiro salvo'}</Text>
                 <Text style={styles.textoVazio}>
                   {erroSalvos || 'Crie seu primeiro roteiro personalizado na aba "Criar Novo".'}
                 </Text>
-              </View>
+              </TouchableOpacity>
             ) : (
               roteirosSalvos.map((roteiro) => (
                 <TouchableOpacity key={roteiro.id} style={styles.cardSalvo} onPress={() => abrirRoteiro(roteiro.id)} onLongPress={() => excluirRoteiro(roteiro.id)} accessibilityHint="Toque para carregar o roteiro completo. Segure para excluir.">
@@ -386,7 +400,8 @@ export default function Itinerary({ aoMudarAba }) {
                     </Text>
                     <Text style={styles.horarioSalvo}>{roteiro.horario}</Text>
                   </View>
-                  <Text style={styles.resumoSalvo}>{roteiro.resumo}</Text>
+                  <Text numberOfLines={2} style={styles.resumoSalvo}>{roteiro.resumo}</Text>
+                  <View style={styles.rodapeSalvo}><Text style={styles.progressoSalvo}>{roteiro.progresso?.status === 'concluido' ? 'Dia concluído' : ['em_trajeto', 'visitando', 'pausado'].includes(roteiro.progresso?.status) ? 'Roteiro em andamento' : 'Ver roteiro completo'}</Text><TouchableOpacity onPress={() => excluirRoteiro(roteiro.id)} accessibilityLabel={'Excluir ' + roteiro.cidade}><Ionicons name="trash-outline" size={18} color="#d4f2f6" /></TouchableOpacity></View>
                 </TouchableOpacity>
               ))
             )}
@@ -543,6 +558,9 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f0f0f0',
   },
   textoSugestao: {
+    flexShrink: 1,
+    minWidth: 50,
+    lineHeight: 21,
     fontSize: 14,
     color: '#333333',
   },
@@ -558,6 +576,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   tagPonto: {
+    maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
@@ -569,6 +588,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 11,
   },
   textoTagPonto: {
+    flexShrink: 1,
+    minWidth: 50,
+    lineHeight: 20,
     fontSize: 13,
     color: '#0097b2',
     fontWeight: '600',
@@ -637,6 +659,7 @@ const styles = StyleSheet.create({
     marginBottom: 22,
   },
   chip: {
+    maxWidth: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -655,7 +678,11 @@ const styles = StyleSheet.create({
     fontSize: 13.5,
     color: '#555555',
     fontWeight: '500',
-    minWidth: 130,
+    minWidth:50, 
+    textAlign:'center',
+    flexShrink: 1,
+    lineHeight: 21,
+    
   },
   textoChipSelecionado: {
     color: '#0097b2',
@@ -695,7 +722,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   cardSalvo: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#0097b2',
     borderRadius: 15,
     padding: 18,
     borderLeftWidth: 5,
@@ -705,25 +732,33 @@ const styles = StyleSheet.create({
   topoCardSalvo: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: 10,
   },
   cidadeSalva: {
+    flex: 1,
+    minWidth: 0,
+    lineHeight: 23,
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333333',
+    color: '#ffffff',
   },
   horarioSalvo: {
+    flexShrink: 0,
+    maxWidth: '38%',
+    lineHeight: 19,
     fontSize: 12.5,
     fontWeight: 'bold',
-    color: '#0097b2',
-    backgroundColor: '#e0f7fa',
+    color: '#ffffff',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
   },
   resumoSalvo: {
     fontSize: 14,
-    color: '#666666',
+    color: '#e0f7fa',
     lineHeight: 20,
   },
+  rodapeSalvo: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }, progressoSalvo: { color: '#ffffff', fontWeight: '700', fontSize: 12 },
 });

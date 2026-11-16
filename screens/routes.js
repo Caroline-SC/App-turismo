@@ -1,8 +1,6 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
-import { Redirect, router, useLocalSearchParams } from 'expo-router';
+import { lazy, Suspense, useCallback } from 'react';
+import { Redirect, router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { useApp } from '../context/AppContext';
-import { api } from '../services/api';
-import { adaptarPonto } from '../services/adapters';
 import { avisar } from '../services/notify';
 const Login = carregarTela(() => import('../components/Login'));
 const Register = carregarTela(() => import('../components/Register'));
@@ -11,6 +9,8 @@ const Explore = carregarTela(() => import('../components/Explore'));
 const Profile = carregarTela(() => import('../components/Profile'));
 const Itinerary = carregarTela(() => import('../components/Itinerary'));
 const PlaceDetail = carregarTela(() => import('../components/PlaceDetail'));
+const TripDetail = carregarTela(() => import('../components/TripDetail'));
+const TripNavigation = carregarTela(() => import('../components/TripNavigation'));
 
 function carregarTela(loader) {
   const Tela = lazy(loader);
@@ -41,24 +41,31 @@ export function RegisterScreen() {
   return <Register aoCadastrar={() => router.replace('/login')} irParaLogin={() => router.replace('/login')} />;
 }
 export function HomeScreen() { return <Protegida><Home aoMudarAba={mudarAba} aoAbrirLocal={abrirLocal} /></Protegida>; }
-export function ExploreScreen() { return <Protegida><Explore aoMudarAba={mudarAba} aoAbrirLocal={abrirLocal} /></Protegida>; }
-export function ItineraryScreen() { return <Protegida><Itinerary aoMudarAba={mudarAba} /></Protegida>; }
+export function ExploreScreen() { return <Protegida><Explore aoMudarAba={mudarAba} /></Protegida>; }
+const abrirRoteiro = id => router.push({ pathname: '/trip/[id]', params: { id } });
+export function ItineraryScreen() { return <Protegida><Itinerary aoMudarAba={mudarAba} aoAbrirRoteiro={abrirRoteiro} /></Protegida>; }
+export function TripScreen() {
+  const { id } = useLocalSearchParams();
+  return <Protegida><TripDetail key={String(id)} roteiroId={id} aoVoltar={() => router.replace('/itinerary')}
+    aoIniciar={tripId => router.push({ pathname: '/trip/[id]/navigate', params: { id: tripId } })} aoAbrirLocal={abrirLocal} aoMudarAba={mudarAba} /></Protegida>;
+}
+export function TripNavigationScreen() {
+  const { id } = useLocalSearchParams();
+  return <Protegida><TripNavigation key={String(id)} roteiroId={id} aoVoltar={() => router.canGoBack() ? router.back() : router.replace({ pathname: '/trip/[id]', params: { id: String(id) } })} aoAbrirLocal={abrirLocal} aoMudarAba={mudarAba} /></Protegida>;
+}
 export function ProfileScreen() {
-  const { user, favoritos, logout, salvarInteresses } = useApp();
+  const { user, favoritos, visitados, logout, salvarInteresses, carregarPerfil, carregandoPerfil, erroPerfil, alternarFavorito } = useApp();
+  useFocusEffect(useCallback(() => { carregarPerfil(); }, [carregarPerfil]));
   const sair = async () => { try { await logout(); router.replace('/login'); } catch (err) { avisar('Sair da conta', err.message); } };
-  return <Protegida><Profile nome={user?.name} email={user?.email} favoritos={favoritos} interesses={user?.interesses} aoAbrirLocal={abrirLocal} aoSalvarInteresses={salvarInteresses} aoMudarAba={mudarAba} aoSair={sair} /></Protegida>;
+  return <Protegida><Profile nome={user?.name} email={user?.email} favoritos={favoritos} visitados={visitados} interesses={user?.interesses}
+    carregando={carregandoPerfil} erro={erroPerfil} aoAtualizar={carregarPerfil} aoAlternarFavorito={alternarFavorito}
+    aoAbrirLocal={abrirLocal} aoSalvarInteresses={salvarInteresses} aoMudarAba={mudarAba} aoSair={sair} /></Protegida>;
 }
 export function PlaceScreen() {
   const { id } = useLocalSearchParams();
-  const { pontos, user } = useApp();
+  const { pontos } = useApp();
   const inicial = pontos.find(p => p.id === id);
-  const [detalhe, setDetalhe] = useState(null);
-  useEffect(() => {
-    if (!user || typeof id !== 'string') return;
-    let ativo = true;
-    api.ponto(id).then(r => { if (ativo) setDetalhe(adaptarPonto(r.ponto)); }).catch(err => { if (ativo) { avisar('Local', err.message); if (!inicial) router.replace('/explore'); } });
-    return () => { ativo = false; };
-  }, [id, user, inicial]);
-  const local = detalhe?.id === id ? detalhe : inicial;
-  return <Protegida>{local ? <PlaceDetail key={local.id} local={local} aoVoltar={() => router.canGoBack() ? router.back() : router.replace('/explore')} aoMudarAba={mudarAba} /> : null}</Protegida>;
+  return <Protegida><PlaceDetail key={typeof id === 'string' ? id : 'place'} local={inicial} pontoId={typeof id === 'string' ? id : null}
+    aoVoltar={() => router.canGoBack() ? router.back() : router.replace('/explore')} aoMudarAba={mudarAba}
+    aoSelecionar={ponto => router.replace({ pathname: '/place/[id]', params: { id: ponto.id } })} /></Protegida>;
 }

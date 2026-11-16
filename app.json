@@ -22,7 +22,16 @@
     },
     "plugins": [
       "expo-status-bar",
-      "expo-router"
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "O Citour usa sua localização para mostrar pontos próximos e acompanhar o trajeto dos seus roteiros enquanto você usa o aplicativo.",
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ]
     ],
     "scheme": "citour"
   }

@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mapa do roteiro Citouur</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>html,body,#map{height:100%;width:100%;margin:0;background:#f5f8f9}.leaflet-tile-pane{filter:grayscale(1) brightness(1.06);opacity:.8}.user{width:32px;height:32px;border:3px solid white;border-radius:50%;background:#0097b2;color:white;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 2px 8px #20434a40}.leaflet-control-attribution{font-size:9px}</style>
+</head><body><div id="map"></div><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script>
+(() => {
+  const avisar = mensagem => parent.postMessage(mensagem, location.origin);
+  if (!window.L) { avisar({ tipo:'citouur-erro' }); return; }
+  const map = L.map('map',{zoomControl:false}).setView([-12.9714,-38.5014],16);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>'}).addTo(map);
+  let destino=null,origem=null,linha=null,dados=null,iniciou=false;
+  const valido = p => p && Number.isFinite(p.latitude) && Number.isFinite(p.longitude) && Math.abs(p.latitude)<=90 && Math.abs(p.longitude)<=180;
+  const ancorar = () => { if (valido(dados?.destino)) { const p=map.latLngToContainerPoint([dados.destino.latitude,dados.destino.longitude]); avisar({tipo:'citouur-ancora',ponto:{x:p.x,y:p.y}}); } };
+  map.on('moveend',ancorar);map.on('resize',ancorar);map.on('dragstart',()=>avisar({tipo:'citouur-moveu'}));
+  window.addEventListener('message', e => {
+    if (e.origin!==location.origin || e.source!==parent || e.data?.tipo!=='citouur-rota') return;
+    const anterior=dados;dados=e.data;
+    if (destino) map.removeLayer(destino);
+    if (origem) map.removeLayer(origem);
+    if (linha) map.removeLayer(linha);
+    if (valido(dados.destino)) {
+      const label=document.createElement('span');label.textContent=dados.destino.nome||'Próxima parada';
+      destino=L.circleMarker([dados.destino.latitude,dados.destino.longitude],{radius:10,color:'#ffffff',weight:4,fillColor:'#0097b2',fillOpacity:1}).addTo(map).bindTooltip(label);
+    }
+    if (valido(dados.origem) && !dados.chegou) origem=L.marker([dados.origem.latitude,dados.origem.longitude],{icon:L.divIcon({className:'',html:'<div class="user">↑</div>',iconSize:[38,38],iconAnchor:[19,19]})}).addTo(map);
+    const pontos=dados.rota?.geometria?.coordinates;
+    if (Array.isArray(pontos) && pontos.length>1) linha=L.polyline(pontos.map(c=>[c[1],c[0]]),{color:dados.chegou?'#8bd2de':'#0097b2',weight:6}).addTo(map);
+    const centro=dados.chegou?dados.destino:dados.origem;
+    if (valido(centro) && (dados.seguindo || !iniciou || dados.centralizar!==anterior?.centralizar)) {
+      const pad=dados.padding||{},h=map.getSize().y;
+      const ponto=map.project([centro.latitude,centro.longitude],iniciou?map.getZoom():17);
+      ponto.y+=(Math.max(0,pad.bottom||0)-Math.max(0,pad.top||0))/2;
+      map.setView(map.unproject(ponto,iniciou?map.getZoom():17),iniciou?map.getZoom():17,{animate:false});iniciou=true;
+    } else if (!iniciou && valido(dados.destino)) { map.setView([dados.destino.latitude,dados.destino.longitude],16);iniciou=true; }
+    ancorar();
+  });
+  avisar({tipo:'citouur-pronto'});
+})();
+</script></body></html>

@@ -13,3 +13,13 @@ test('celular segue o IP do Expo; navegador usa o próprio hostname', () => {
 test('seleção LAN ignora Radmin VPN e endereços sem rede', () => {
   assert.equal(network.selecionarHost({ vpn: [{ family: 'IPv4', internal: false, address: '26.8.1.245' }], loop: [{ family: 'IPv4', internal: true, address: '127.0.0.1' }], wifi: [{ family: 'IPv4', internal: false, address: '192.168.1.110' }] }), '192.168.1.110');
 });
+test('inicialização limpa offline herdado sem alterar ambiente do terminal', () => {
+  const original = { EXPO_OFFLINE: '1', npm_config_offline: 'true', TESTE: 'ok' };
+  const env = network.ambienteExpo(original, '192.168.1.110');
+  assert.equal(env.EXPO_OFFLINE, undefined);
+  assert.equal(env.npm_config_offline, undefined);
+  assert.equal(env.NODE_USE_SYSTEM_CA, '1');
+  assert.equal(env.REACT_NATIVE_PACKAGER_HOSTNAME, '192.168.1.110');
+  assert.equal(original.EXPO_OFFLINE, '1');
+  assert.equal(network.ambienteExpo(original, null, true).EXPO_OFFLINE, '1');
+});

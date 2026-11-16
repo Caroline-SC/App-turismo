@@ -38,12 +38,15 @@ export function createApiClient({ baseUrl, fetchImpl = (url, options) => fetch(u
     updateProfile: body => request('/users/profile', { method: 'PUT', body }),
     pontos: (busca = '') => request(`/pontos?resumo=true${busca ? `&busca=${encodeURIComponent(busca)}` : ''}`, { auth: false }),
     ponto: id => request(`/pontos/${encodeURIComponent(id)}`, { auth: false }),
-    favoritos: () => request('/users/favoritos'),
+    favoritos: () => request('/users/favoritos?resumo=true'),
     toggleFavorito: id => request(`/users/favoritos/${encodeURIComponent(id)}`, { method: 'POST' }),
+    definirFavorito: (id, favoritado) => request(`/users/favoritos/${encodeURIComponent(id)}`, { method: 'PUT', body: { favoritado } }),
     roteiros: (pagina = 1) => request(`/roteiros?pagina=${pagina}&limite=50`),
     roteiro: id => request(`/roteiros/${encodeURIComponent(id)}`),
     criarRoteiro: body => request('/roteiros', { method: 'POST', body, timeout: 300000 }),
     excluirRoteiro: id => request(`/roteiros/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    progressoRoteiro: (id, body) => request(`/roteiros/${encodeURIComponent(id)}/progresso`, { method: 'PATCH', body }),
+    trajetoRoteiro: (id, body) => request(`/roteiros/${encodeURIComponent(id)}/trajeto`, { method: 'POST', body, timeout: 25000 }),
   };
 }
 
