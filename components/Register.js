@@ -1,5 +1,6 @@
 import  { useState } from 'react';
-import {Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
+import { View, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native';
+import Text from './AppText';
 import { authStyles } from '../styles/authStyles';
 import { api } from '../services/api';
 import { avisar } from '../services/notify';
@@ -31,14 +32,14 @@ export default function Register({ aoCadastrar, irParaLogin }) {
   };
 
   return (
-    <View style={authStyles.container}>
+    <ScrollView style={authStyles.container} contentContainerStyle={authStyles.scrollContent} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       {/* Topo Azul Estilizado */}
       <View style={authStyles.topoAzul}>
         <View style={authStyles.conatinerLogo}>
           <Image source={require('../assets/icon.png')} style={authStyles.logo} />
-          <Text style={authStyles.textoTopo}numberOfLines={1}
-      adjustsFontSizeToFit={true}
-      minimumFontScale={0.6}>Bem vindo ao Citour</Text>
+          <Text style={authStyles.textoTopo}
+
+      >Bem vindo ao Citour</Text>
         </View>
       </View>
 
@@ -47,54 +48,54 @@ export default function Register({ aoCadastrar, irParaLogin }) {
         <Text style={authStyles.boasVindas}>Cadastre-se no Citour</Text>
         <Text style={authStyles.instrucao}>Preencha os campos abaixo</Text>
 
-        <TextInput 
-          style={authStyles.input} 
-          placeholder="Nome Completo" 
-          placeholderTextColor="#999" 
-          value={nome} 
-          onChangeText={setNome} 
+        <TextInput
+          style={authStyles.input}
+          placeholder="Nome Completo"
+          placeholderTextColor="#999"
+          value={nome}
+          onChangeText={setNome}
         />
 
-        <TextInput 
-          style={authStyles.input} 
-          placeholder="E-mail" 
-          placeholderTextColor="#999" 
-          value={email} 
-          onChangeText={setEmail} 
-          keyboardType="email-address" 
-          autoCapitalize="none" 
+        <TextInput
+          style={authStyles.input}
+          placeholder="E-mail"
+          placeholderTextColor="#999"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
 
-        <TextInput 
-          style={authStyles.input} 
-          placeholder="Senha" 
-          placeholderTextColor="#999" 
-          value={senha} 
-          onChangeText={setSenha} 
-          secureTextEntry={true} 
+        <TextInput
+          style={authStyles.input}
+          placeholder="Senha"
+          placeholderTextColor="#999"
+          value={senha}
+          onChangeText={setSenha}
+          secureTextEntry={true}
         />
 
-        <TextInput 
-          style={authStyles.input} 
-          placeholder="Confirmar Senha" 
-          placeholderTextColor="#999" 
-          value={confirmarSenha} 
-          onChangeText={setConfirmarSenha} 
-          secureTextEntry={true} 
+        <TextInput
+          style={authStyles.input}
+          placeholder="Confirmar Senha"
+          placeholderTextColor="#999"
+          value={confirmarSenha}
+          onChangeText={setConfirmarSenha}
+          secureTextEntry={true}
         />
 
         <TouchableOpacity style={authStyles.botaoSubmmit} onPress={verificarCadastro} disabled={enviando}>
-          <Text style={authStyles.textoBotao}adjustsFontSizeToFit={true}>{enviando ? 'Cadastrando…' : 'Cadastrar'}</Text>
+          <Text style={authStyles.textoBotao}>{enviando ? 'Cadastrando…' : 'Cadastrar'}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Rodapé para Voltar ao Login */}
       <View style={authStyles.containerNext}>
-  <Text style={authStyles.textoNormal}adjustsFontSizeToFit={true}>Já tem uma conta? </Text>
+  <Text style={authStyles.textoNormal}>Já tem uma conta? </Text>
   <TouchableOpacity onPress={irParaLogin}>
-    <Text style={authStyles.linkNext}adjustsFontSizeToFit={true}>Faça Login</Text>
+    <Text style={authStyles.linkNext}>Faça Login</Text>
   </TouchableOpacity>
 </View>
-    </View>
+    </ScrollView>
   );
 }

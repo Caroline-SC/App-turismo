@@ -9,6 +9,8 @@ const AppContext = createContext(null);
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null), [verificando, setVerificando] = useState(true);
   const [pontos, setPontos] = useState([]);
+  const [alturaNavbar, setAlturaNavbar] = useState(0);
+  const medirNavbar = useCallback(altura => setAlturaNavbar(atual => Math.abs(atual - altura) > 1 ? altura : atual), []);
   const [favoritosDados, setFavoritosDados] = useState({ usuario: null, pontos: [] });
   const [visitados, setVisitados] = useState([]);
   const [carregandoPerfil, setCarregandoPerfil] = useState(false), [erroPerfil, setErroPerfil] = useState('');
@@ -91,6 +93,6 @@ export function AppProvider({ children }) {
       setUser(atual => atual ? { ...atual, name: r.user.name, email: r.user.email, interesses: r.user.interesses } : atual);
     }
   };
-  return <AppContext.Provider value={{ user, verificando, login, logout, pontos, favoritos, visitados, carregandoPontos, erroPontos, carregarPontos, atualizarCatalogo, alternarFavorito, salvarInteresses, carregarPerfil, carregandoPerfil, erroPerfil }}>{children}</AppContext.Provider>;
+  return <AppContext.Provider value={{ user, verificando, login, logout, pontos, favoritos, visitados, carregandoPontos, erroPontos, carregarPontos, atualizarCatalogo, alternarFavorito, salvarInteresses, carregarPerfil, carregandoPerfil, erroPerfil, alturaNavbar, medirNavbar }}>{children}</AppContext.Provider>;
 }
 export const useApp = () => useContext(AppContext);

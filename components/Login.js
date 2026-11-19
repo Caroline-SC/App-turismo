@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Text, View, TextInput, TouchableOpacity, Image } from 'react-native';
+import { View, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native';
+import Text from './AppText';
 import { authStyles } from '../styles/authStyles';
 import { avisar } from '../services/notify';
 
@@ -21,7 +22,7 @@ export default function Login({ aoLogar, irParaCadastro }) {
   };
 
   return (
-    <View style={authStyles.container}>
+    <ScrollView style={authStyles.container} contentContainerStyle={authStyles.scrollContent} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       {/* Topo Azul Estilizado */}
       <View style={authStyles.topoAzul}>
       <View style={authStyles.conatinerLogo}>
@@ -29,12 +30,12 @@ export default function Login({ aoLogar, irParaCadastro }) {
         source={require('../assets/icon.png')}
         style={authStyles.logo}
         />
-        <Text style={authStyles.textoTopo}numberOfLines={1}
-      adjustsFontSizeToFit={true}
-      minimumFontScale={0.6}>Bem vindo ao Citour</Text>
+        <Text style={authStyles.textoTopo}
+
+      >Bem vindo ao Citour</Text>
       </View>
       </View>
-        
+
       {/* Conteúdo Central do Formulário */}
       <View style={authStyles.conteudoFormulario}>
         <Text style={authStyles.boasVindas}>Olá, usuário</Text>
@@ -60,18 +61,18 @@ export default function Login({ aoLogar, irParaCadastro }) {
         />
 
         <TouchableOpacity style={authStyles.botaoSubmmit} onPress={verificarLogin} disabled={enviando}>
-          <Text style={authStyles.textoBotao}adjustsFontSizeToFit={true}>{enviando ? 'Entrando…' : 'Entrar'}</Text>
+          <Text style={authStyles.textoBotao}>{enviando ? 'Entrando…' : 'Entrar'}</Text>
         </TouchableOpacity>
-        
+
       </View>
       <View style={authStyles.containerNext}>
-  <Text style={authStyles.textoNormal}numberOfLines={1}
-      adjustsFontSizeToFit={true}
-      minimumFontScale={0.6}>Não tem uma conta? </Text>
-  <TouchableOpacity onPress={irParaCadastro}> 
-    <Text style={authStyles.linkNext}adjustsFontSizeToFit={true}>Cadastre-se</Text>
+  <Text style={authStyles.textoNormal}
+
+      >Não tem uma conta? </Text>
+  <TouchableOpacity onPress={irParaCadastro}>
+    <Text style={authStyles.linkNext}>Cadastre-se</Text>
   </TouchableOpacity>
 </View>
-    </View>
+    </ScrollView>
   );
 }

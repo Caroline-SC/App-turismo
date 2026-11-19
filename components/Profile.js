@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View, ScrollView, TouchableOpacity, StatusBar, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, ScrollView, TouchableOpacity, StatusBar } from 'react-native';
+import Text from './AppText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Navbar from './Navbar';
 import { avisar } from '../services/notify';
 import { interessesApi } from '../services/adapters';
 import { alternarPreferencia, opcoesPreferencias } from '../services/profile';
-import { larguraRotulo } from '../services/labels';
+import { useNavbarHeight } from '../hooks/useNavbarHeight';
 
 export default function Profile({
   aoMudarAba,
@@ -24,7 +25,7 @@ export default function Profile({
   aoAlternarFavorito,
 }) {
   const insets = useSafeAreaInsets();
-  const { width, fontScale } = useWindowDimensions();
+  const alturaNav = useNavbarHeight();
   const [aba, setAba] = useState('preferencias');
   const [salvando, setSalvando] = useState(false);
   const [removendo, setRemovendo] = useState(null);
@@ -57,7 +58,7 @@ export default function Profile({
         <Text style={styles.subtitulo}>Gerencie suas preferências turísticas</Text>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.conteudo, { paddingBottom: 100 + insets.bottom }]} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.conteudo, { paddingBottom: alturaNav + 30 }]} showsVerticalScrollIndicator={false}>
         {/* Card do usuário */}
         <View style={styles.cardUsuario}>
           <View style={styles.avatar}>
@@ -123,7 +124,7 @@ export default function Profile({
                     activeOpacity={0.7}
                   >
                     {ativo && <Ionicons name="checkmark" size={14} color="#0097b2" />}
-                    <Text style={[styles.textoChip, { minWidth: Math.min(Math.max(80, width - 126), larguraRotulo(item.titulo, 14, fontScale, 70)) }, ativo && styles.textoChipAtivo]}>{item.titulo}</Text>
+                    <Text style={[styles.textoChip, ativo && styles.textoChipAtivo]}>{item.titulo}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -171,28 +172,13 @@ export default function Profile({
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff', width: '100%' },
-  topo: {
-    backgroundColor: '#0097b2',
-    paddingHorizontal: 25,
-    paddingTop: 60,
-    paddingBottom: 25,
-    borderBottomLeftRadius: 5,
-    borderBottomRightRadius: 5,
-  },
-  titulo: { fontSize: 24, fontWeight: 'bold', color: '#ffffff' },
-  subtitulo: { fontSize: 14, color: '#e0f7fa', marginTop: 2 },
+  topo: { backgroundColor: '#0097b2', paddingHorizontal: 25, paddingTop: 60, paddingBottom: 25, borderBottomLeftRadius: 5, borderBottomRightRadius: 5 },
+  titulo: { fontSize: 24, fontWeight: 'bold', color: '#ffffff', flexShrink: 1, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%', lineHeight: 34 },
+  subtitulo: { fontSize: 14, color: '#e0f7fa', marginTop: 2, flexShrink: 1, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%', lineHeight: 20 },
 
   conteudo: { padding: 20, paddingBottom: 130, gap: 18 },
 
-  cardUsuario: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 20,
-    paddingVertical: 32,
-    paddingHorizontal: 20,
-    alignItems: 'center',
-    minHeight: 330,
-    justifyContent: 'center',
-  },
+  cardUsuario: { backgroundColor: '#f5f5f5', borderRadius: 20, paddingVertical: 32, paddingHorizontal: 20, alignItems: 'center', minHeight: 330, justifyContent: 'center' },
   avatar: {
     width: 96,
     height: 96,
@@ -202,72 +188,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 14,
   },
-  nome: { fontSize: 22, fontWeight: 'bold', color: '#333333', textAlign: 'center', maxWidth: '100%', flexShrink: 1, lineHeight: 29 },
-  email: { fontSize: 14, color: '#666666', marginTop: 4, textAlign: 'center', maxWidth: '100%', flexShrink: 1, lineHeight: 21 },
+  nome: { fontSize: 22, fontWeight: 'bold', color: '#333333', textAlign: 'center', maxWidth: '100%', flexShrink: 1, lineHeight: 29, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, width: '100%' },
+  email: { fontSize: 14, color: '#666666', marginTop: 4, textAlign: 'center', maxWidth: '100%', flexShrink: 1, lineHeight: 21, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, width: '100%' },
   divisor: { width: '100%', height: 1, backgroundColor: '#e0e0e0', marginVertical: 24 },
-  numeros: { flexDirection: 'row', alignItems: 'center', width: '100%' },
+  numeros: { flexDirection: 'row', alignItems: 'center', width: '100%', flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' },
   numero: { flex: 1, alignItems: 'center' },
-  valor: { fontSize: 30, fontWeight: 'bold', color: '#0097b2' },
-  rotulo: { fontSize: 13, color: '#666666', marginTop: 4 },
+  valor: { fontSize: 30, fontWeight: 'bold', color: '#0097b2', flexShrink: 1, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%', lineHeight: 42 },
+  rotulo: { fontSize: 13, color: '#666666', marginTop: 4, flexShrink: 1, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%', lineHeight: 19 },
   linhaVertical: { width: 1, height: 44, backgroundColor: '#e0e0e0' },
 
-  seletor: {
-    flexDirection: 'row',
-    backgroundColor: '#f0f0f0',
-    borderRadius: 12,
-    padding: 4,
-  },
+  seletor: { flexDirection: 'row', backgroundColor: '#f0f0f0', borderRadius: 12, padding: 4, flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' },
   opcaoAba: { flex: 1, minWidth: 0, paddingHorizontal: 6, paddingVertical: 10, borderRadius: 9, alignItems: 'center' },
   opcaoAbaAtiva: { backgroundColor: '#0097b2' },
-  textoAba: { fontSize: 14, fontWeight: '600', color: '#666666', flexShrink: 1, textAlign: 'center', lineHeight: 21 },
-  textoAbaAtivo: { color: '#ffffff' },
+  textoAba: { fontSize: 14, fontWeight: '600', color: '#666666', flexShrink: 1, textAlign: 'center', lineHeight: 21, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%' },
+  textoAbaAtivo: { color: '#ffffff', flexShrink: 1, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%' },
 
   bloco: { backgroundColor: '#f5f5f5', borderRadius: 15, padding: 16, gap: 8 },
-  tituloBloco: { fontSize: 16, fontWeight: 'bold', color: '#333333' },
-  textoBloco: { fontSize: 14, color: '#666666', lineHeight: 20 },
+  tituloBloco: { fontSize: 16, fontWeight: 'bold', color: '#333333', flexShrink: 1, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%', lineHeight: 23 },
+  textoBloco: { fontSize: 14, color: '#666666', lineHeight: 20, flexShrink: 1, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%' },
 
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 },
-  chip: {
-    maxWidth: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6, minWidth: 0, maxWidth: '100%' },
+  chip: { maxWidth: '100%', flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#e0e0e0', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, flexWrap: 'wrap', minWidth: 0, width: '48%', minHeight: 44 },
   chipAtivo: { backgroundColor: '#e0f7fa', borderColor: '#0097b2' },
-  textoChip: { fontSize: 14, color: '#666666', flexShrink: 1, minWidth: 80, lineHeight: 21, textAlign:'center'},
-  textoChipAtivo: { color: '#0097b2', fontWeight: '600', minWidth:80, textAlign:'center' },
-  contador: { fontSize: 12, color: '#999999', marginTop: 4 },
+  textoChip: { fontSize: 14, color: '#666666', flexShrink: 1, minWidth: 0, lineHeight: 21, textAlign:'center', flexWrap: 'wrap', includeFontPadding: true, maxWidth: '100%', flex: 1, width: '80%' },
+  textoChipAtivo: { color: '#0097b2', fontWeight: '600', minWidth: 0, textAlign:'center', flexShrink: 1, flexWrap: 'wrap', includeFontPadding: true, maxWidth: '100%' },
+  contador: { fontSize: 12, color: '#999999', marginTop: 4, flexShrink: 1, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%', lineHeight: 17 },
 
   vazio: { alignItems: 'center', paddingVertical: 24, gap: 8 },
-  textoVazio: { fontSize: 14, color: '#999999', textAlign: 'center' },
-  itemFavorito: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 12,
-  },
+  textoVazio: { fontSize: 14, color: '#999999', textAlign: 'center', flexShrink: 1, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%', lineHeight: 20 },
+  itemFavorito: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#ffffff', borderRadius: 12, padding: 12, flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' },
   dadosFavorito: { flex: 1, minWidth: 0, paddingVertical: 5 }, removerFavorito: { minWidth: 36, minHeight: 42, alignItems: 'center', justifyContent: 'center' },
-  nomeFavorito: { fontSize: 15, fontWeight: 'bold', color: '#333333', flexShrink: 1, lineHeight: 22 },
-  bairroFavorito: { fontSize: 12, color: '#0097b2', marginTop: 2, flexShrink: 1, lineHeight: 18 },
-  atualizando: { flexDirection: 'row', alignItems: 'center', gap: 10 }, aviso: { backgroundColor: '#e8f5f7', borderRadius: 12, padding: 14, gap: 6 }, link: { color: '#0097b2', fontWeight: '700', fontSize: 12 },
+  nomeFavorito: { fontSize: 15, fontWeight: 'bold', color: '#333333', flexShrink: 1, lineHeight: 22, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%' },
+  bairroFavorito: { fontSize: 12, color: '#0097b2', marginTop: 2, flexShrink: 1, lineHeight: 18, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%' },
+  atualizando: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap', minWidth: 0, maxWidth: '100%' }, aviso: { backgroundColor: '#e8f5f7', borderRadius: 12, padding: 14, gap: 6 }, link: { color: '#0097b2', fontWeight: '700', fontSize: 12, flexShrink: 1, flexWrap: 'wrap', minWidth: 0, includeFontPadding: true, maxWidth: '100%', lineHeight: 17 },
 
-  botaoSair: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#f5c6c4',
-  },
-  textoSair: { fontSize: 15, color: '#e53935', flexShrink: 1, lineHeight: 22 , minWidth:150, textAlign:'center'},
+  botaoSair: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: '#f5c6c4', flexWrap: 'wrap', minWidth: 0, maxWidth: '100%', minHeight: 48 },
+  textoSair: { fontSize: 15, color: '#e53935', flexShrink: 1, lineHeight: 22, minWidth: 0, textAlign:'center', flexWrap: 'wrap', includeFontPadding: true, maxWidth: '100%', width: '75%' },
 });
